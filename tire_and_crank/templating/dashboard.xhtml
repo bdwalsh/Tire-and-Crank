@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+
+<headReplace metal:use-macro="./templating/head.xhtml/meta_head">
+  </headReplace>
+
+<body>
+
+<navReplace metal:use-macro="./templating/nav.xhtml/main_nav">
+    </navReplace>
+
+<div id="main" class="container">
+
+
+<div class="row">
+  <div class="medium-6 columns">
+    <userProfileReplace metal:use-macro="./templating/userProfile.xhtml/userProfile"></userProfileReplace>
+  </div>
+  
+  <div class="medium-6 columns">
+    <!-- log in displays if no session started -->
+    <loginFormReplace metal:use-macro="./templating/loginForm.xhtml/login"></loginFormReplace>
+
+    <!-- tal:condition="exists: isLoggedIn" -->
+    <logoutFormReplace metal:use-macro="./templating/logoutForm.xhtml/logout"></logoutFormReplace>
+  </div>
+</div>
+
+<div id="messages" tal:condition="php: Session::get('isLoggedIn')" class="callout secondary">
+    <p>Messages:</p>
+      <ul id="talMessages" tal:condition="php: count(messages) GT 0">
+        <li tal:repeat="msg messages" class="${msg/type}"><span tal:content="msg/text"></span></li>
+      </ul>
+      <ul id="AJAXMessages">
+      </ul>
+</div>
+
+
+<productEditorReplace metal:use-macro="./templating/productEditor.xhtml/productEdit"></productEditorReplace>
+
+
+
+
+
+
+
+
+</div>
+
+<!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
+<script src="js/vendor/jquery.min.js"></script>
+    <script src="js/vendor/what-input.min.js"></script>
+    <script src="js/foundation.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+      /*<![CDATA[*/
+        $(document).ready(function() {
+
+
+        //inventory stuff   
+            $.ajax({
+                url: "./inventory.php",
+                type: "POST",
+                dataType: "JSON",
+                data: {action:"getInventory"},
+                success: function(returnedData) {
+                    console.log(returnedData);
+                
+                        for (var key in returnedData){
+                        var lowMessage = document.createElement("div");
+                        lowMessage.innerHTML = "Low Inventory " + returnedData[key].description;
+                        document.getElementById("AJAXMessages").appendChild(lowMessage);    
+                        }
+         
+
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.log(jqXHR.statusText, textStatus);
+                }
+            });
+
+            // from: http://www.developerdrive.com/2013/04/turning-a-form-element-into-json-and-submiting-it-via-jquery/
+            function ConvertFormToJSON(form){
+                var array = $(form).serializeArray();
+                var json = {};
+
+                jQuery.each(array, function() {
+                    // don't send 'undefined'
+                    json[this.name] = this.value || '';
+                });
+                return json;
+            }
+
+            // FOR PUTTING OBJECTS INTO HTML5 WEB STORAGE - ADD METHODS TO THE STORAGE OBJECT
+            // http://stackoverflow.com/questions/2010892/storing-objects-in-html5-localstorage
+            Storage.prototype.setObject = function(key, value) {
+                this.setItem(key, JSON.stringify(value));
+            }
+
+            Storage.prototype.getObject = function(key) {
+                var value = this.getItem(key);
+                return value && JSON.parse(value);
+            }
+
+
+            function doLogin() {
+
+                var formData = ConvertFormToJSON("#loginForm");
+                //console.log("Login data to send: ", formData);
+
+                $.ajax({
+                    url: "./login.php",
+                    type: "POST",
+                    dataType: "JSON",
+                    data: formData,
+                    success: function(returnedData) {
+                        console.log("Login data returned: ", returnedData);
+
+                        var status = returnedData['status'];
+                        if(status == 'error') {
+                            msgs = returnedData['msg'];
+                            for(msg in msgs) {
+                                //console.log(msgs[msg]['text']);
+
+                                $("#AJAXMessages").html("<li class='" + msgs[msg]['type']
+                                    + "'" + ">" + msgs[msg]['text'] + "</li>");
+                            }
+
+
+                            /* BTW, IF LOGOUT FAILED, IT'S BECAUSE THE SESSION EXPIRED
+                               YOU COULD EASILY JUST RESET THE HTML IN THE PAGE
+                             */
+
+                        } else {
+                            // you're in, show profile
+                            console.log(returnedData['user']);
+                            $("#profileContainer").html("<div id='userProfile'>"
+                                + "<h2>User Profile</h2>\n"
+                                + "<span>" + returnedData['user']['user_name'] + "</span> "
+                                + "<span>" + returnedData['user']['first_name'] + "</span> "
+                                + "<span>" + returnedData['user']['last_name'] + "</span>"
+                                +"<br/><br/><br/></div>");
+                            $("#AJAXMessages").html("");
+
+                            // remove login form
+                            $("#loginForm").remove();
+
+                            // create logout form
+                            $("#loginFormContainer").after('<div id="logoutFormContainer"><form id="logoutForm"><fieldset><legend>Logout Form</legend><label for="password">Password: </label><input id="logoutbutton" type="button" value="Logout"/><input type="hidden" value="logout" name="logoutButton"/></fieldset></form></div>');
+                            $("#logoutbutton").bind("click", doLogout);
+
+                        }
+
+
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log("AJAX Error", textStatus);
+                    }
+                });
+            }
+
+            function doLogout() {
+                var formData = {logout: "true"};
+                //console.log("Logout data to send: ", formData);
+
+                $.ajax({
+                    url: "./logout.php",
+                    type: "POST",
+                    dataType: "JSON",
+                    data: formData,
+                    success: function(returnedData) {
+                        //console.log("Logout data returned: ", returnedData);
+                        window.location.href = "index.php";
+
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        //console.log(jqXHR.statusText, textStatus, errorThrown);
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+            }
+
+            // login event
+            $("#loginbutton").click(doLogin);
+
+            // logout event
+            $("#logoutbutton").click(doLogout);
+
+                    function loadProducts() {
+                $.ajax({
+                    url: "./dashboard.php",
+                    type: "GET",
+                    dataType: 'html',
+                    success: function(returnedData) {
+                        //console.log("cart checkout response: ", returnedData);
+                        $("#productrows").html(returnedData);
+                        //window.location.href = "user-editor.html";
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+            }
+
+            loadProducts();
+
+
+            $("#addNewProduct").submit(function(e) {
+                e.preventDefault();
+
+                // get values from form
+                var description = $("#addDescription").val();
+                var price = $("#addPrice").val();
+                var SKU = $("#addSKU").val();
+
+                console.log(description, price, SKU);
+
+                $.ajax({
+                    url: "./dashboard.php",
+                    type: "POST",
+                    dataType: "json",
+                    data: {action: "add", newDescription: description,
+                        newPrice: price, newSKU: SKU},
+                    success: function(returnedData) {
+                        loadProducts();
+                        console.log(returnedData);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        $("#p1").text(jqXHR.statusText);
+                    }
+
+                });
+
+            });
+
+            $('#product').on('click', '.delete', function() {
+                console.log(11);
+                var prodID = this.getAttribute("id");
+                prodID = prodID.replace("d-", "");
+                console.log(prodID);
+                $.ajax({
+                    url: "./dashboard.php",
+                    type: "POST",
+                    dataType: 'json',
+                    data: {action: "delete", prodID: prodID},
+                    success: function(returnedData) {
+                        loadProducts();
+
+                        //window.location.href = "user-editor.html";
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+
+            });
+
+            $('#product').on('click', '.update', function() {
+                var prodID = this.getAttribute("id");
+                //var firstName = $(this).val(
+                prodID = prodID.replace("u-", "");
+                var editedDesc = $(this).parent().parent().find(".description span").text();
+                var editedPrice = $(this).parent().parent().find(".price span").text();
+                console.log(prodID, editedDesc, editedPrice);
+
+                $.ajax({
+                    url: "./dashboard.php",
+                    type: "POST",
+                    dataType: 'json',
+                    data: {action: "update", prodID: prodID, editedDesc: editedDesc, editedPrice:editedPrice},
+                    success: function(returnedData) {
+                        loadProducts();
+                        console.log(returnedData);
+                        //window.location.href = "user-editor.html";
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+
+            });
+
+
+            // http://stackoverflow.com/questions/11882693/change-table-cell-from-span-to-input-on-click
+            $('#product').on('click', 'span', function() {
+
+                var $td = $(this).parent();
+                var $input = null;
+
+                var val = $(this).html();
+
+                if($td.attr('class') === 'description') {
+                    //var val = $(this).html();
+                    $td.html('<input type="text" value="' + val + '"/>');
+                    var $input = $td.find('input');
+                    $input.focus();
+                    $input.select();
+                }
+                
+                 if($td.attr('class') === 'price') {
+                    //var val = $(this).html();
+                    $td.html('<input type="text" value="' + val + '"/>');
+                    var $input = $td.find('input');
+                    $input.focus();
+                    $input.select();
+                }
+
+
+                if($input != null) {
+
+                    $input.on('blur', function() {
+                        $(this).parent().html('<span>' + $(this).val() + '</span>');
+                    });
+
+                    $input.keyup(function(e) {
+                        if(e.which == 13) {
+                            $(this).parent().html('<span>' + $(this).val() + '</span>');
+                        } else if(e.which == 27) {
+                       
+                            $(this).parent().html('<span>' + val + '</span>');
+                        }
+                    });
+                }
+            });
+
+            $('#product').on('click', '.addInv', function() {
+           
+                var ID = this.getAttribute("id");
+                var addInv = document.getElementById("i-" + ID).value;
+                
+                $.ajax({
+                    url: "./inventory.php",
+                    type: "POST",
+                    dataType: "JSON",
+                    data: {action:"addInventory", ID:ID, addInv:addInv},
+                    success: function(returnedData) {
+                        console.log(returnedData);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+                
+            });
+
+
+
+       
+            
+        });
+      /*]]>*/
+    </script>
+
+<footerReplace metal:use-macro="./templating/footer.xhtml/page_footer">
+    </footerReplace>
+
+</body>
+</html>

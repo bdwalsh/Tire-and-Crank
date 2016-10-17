@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- View -->
+<headReplace metal:use-macro="/templating/head.xhtml/meta_head">
+</headReplace>
+
+<body>
+
+
+<navReplace metal:use-macro="./templating/nav.xhtml/main_nav">
+</navReplace>
+
+<div id="main">
+<div id="home">
+
+<!-- log in displays if no session started -->
+<div class="row">
+
+  <div class="medium-6 large-8 columns">
+    <userProfileReplace metal:use-macro="./templating/userProfile.xhtml/userProfile"></userProfileReplace>
+  </div>
+  <div class="medium-6 large-4 columns">
+    <loginFormReplace metal:use-macro="./templating/loginForm.xhtml/login"></loginFormReplace>
+
+    <!-- tal:condition="exists: isLoggedIn" -->
+    <logoutFormReplace metal:use-macro="./templating/logoutForm.xhtml/logout"></logoutFormReplace>
+  </div>
+</div>
+
+<div class="row">
+    <div class="medium-6 medium-offset-6 large-4 large-offset-8 columns">
+      <div id="messages" class="callout secondary">
+        <p>Messages:</p>
+        <ul id="talMessages" tal:condition="php: count(messages) GT 0">
+          <li tal:repeat="msg messages" class="${msg/type}"><span tal:content="msg/text"></span></li>
+        </ul>
+        <ul id="AJAXMessages">
+        </ul>
+      </div>
+    </div>
+  </div>
+      
+
+<div class="row">
+    <div class="medium-6 medium-centered columns" id="frontSplash">
+
+        <h1>Tire &amp; Crank</h1>
+        <h2>Premium Bicycle Repair and Products</h2>
+         <a href="tire_and_crank/productpage.php" class="button secondary">Check out our shop</a>
+
+    </div>
+
+
+</div>
+    
+
+    
+    
+
+      
+
+
+</div>
+</div>
+
+    <!-- <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
+    <script src="js/vendor/jquery.min.js"></script>
+    <script src="js/vendor/what-input.min.js"></script>
+    <script src="js/foundation.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+/*<![CDATA[*/
+
+        $(document).ready(function() {
+
+            // from: http://www.developerdrive.com/2013/04/turning-a-form-element-into-json-and-submiting-it-via-jquery/
+            function ConvertFormToJSON(form){
+                var array = $(form).serializeArray();
+                var json = {};
+
+                jQuery.each(array, function() {
+                    // don't send 'undefined'
+                    json[this.name] = this.value || '';
+                });
+                return json;
+            }
+
+            // FOR PUTTING OBJECTS INTO HTML5 WEB STORAGE - ADD METHODS TO THE STORAGE OBJECT
+            // http://stackoverflow.com/questions/2010892/storing-objects-in-html5-localstorage
+            Storage.prototype.setObject = function(key, value) {
+                this.setItem(key, JSON.stringify(value));
+            }
+
+            Storage.prototype.getObject = function(key) {
+                var value = this.getItem(key);
+                return value && JSON.parse(value);
+            }
+
+
+            function doLogin() {
+
+                var formData = ConvertFormToJSON("#loginForm");
+                //console.log("Login data to send: ", formData);
+
+                $.ajax({
+                    url: "./login.php",
+                    type: "POST",
+                    dataType: "JSON",
+                    data: formData,
+                    success: function(returnedData) {
+                        console.log("Login data returned: ", returnedData);
+
+                        var status = returnedData['status'];
+                        if(status == 'error') {
+                            msgs = returnedData['msg'];
+                            for(msg in msgs) {
+                                //console.log(msgs[msg]['text']);
+
+                                $("#AJAXMessages").html("<li class='" + msgs[msg]['type']
+                                    + "'" + ">" + msgs[msg]['text'] + "</li>");
+                            }
+
+
+                            /* BTW, IF LOGOUT FAILED, IT'S BECAUSE THE SESSION EXPIRED
+                               YOU COULD EASILY JUST RESET THE HTML IN THE PAGE
+                             */
+
+                        } else {
+                            // you're in, show profile
+                            console.log(returnedData['user']);
+                            $("#profileContainer").html("<div id='userProfile'>"
+                                + "<h2>User Profile</h2>\n"
+                                + "<span>" + returnedData['user']['user_name'] + "</span> "
+                                + "<span>" + returnedData['user']['first_name'] + "</span> "
+                                + "<span>" + returnedData['user']['last_name'] + "</span>"
+                                +"<br/><br/><br/></div>");
+                            $("#AJAXMessages").html("");
+
+                            // remove login form
+                            $("#loginForm").remove();
+
+                            // create logout form
+                            $("#loginFormContainer").after('<div id="logoutFormContainer"><form id="logoutForm"><fieldset><legend>Logout Form</legend><label for="password">Password: </label><input id="logoutbutton" type="button" value="Logout"/><input type="hidden" value="logout" name="logoutButton"/></fieldset></form></div>');
+                            $("#logoutbutton").bind("click", doLogout);
+
+                        }
+
+
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log("AJAX Error", textStatus);
+                    }
+                });
+            }
+
+            function doLogout() {
+                var formData = {logout: "true"};
+                //console.log("Logout data to send: ", formData);
+
+                $.ajax({
+                    url: "./logout.php",
+                    type: "POST",
+                    dataType: "JSON",
+                    data: formData,
+                    success: function(returnedData) {
+                        //console.log("Logout data returned: ", returnedData);
+                        window.location.href = "index.php";
+
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        //console.log(jqXHR.statusText, textStatus, errorThrown);
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+            }
+
+            // login event
+            $("#loginbutton").click(doLogin);
+
+            // logout event
+            $("#logoutbutton").click(doLogout);
+
+
+            function loadProducts() {
+                $.ajax({
+                    url: "./products.php",
+                    type: "GET",
+                    dataType: 'html',
+                    success: function(returnedData) {
+                        console.log("products: ", returnedData);
+                        $("#productslist").html(returnedData);
+
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+            }
+
+            loadProducts();
+
+            // SESSION STORAGE GET ITEMS IF THEY ALREADY EXIST IN SESSION STORAGE
+            function loadShoppingCartItems() {
+
+                var cartData = sessionStorage.getObject('autosave');
+
+                // if nothing added leave function
+                if(cartData == null) {
+                    return;
+                }
+                var cartDataItems = cartData['items'];
+                var shoppingCartList = $("#shoppingCart");
+
+
+                for(var i = 0; i < cartDataItems.length; i++) {
+                    var item = cartDataItems[i];
+                    // sku, qty, date
+                    var sku = item['sku'];
+                    var qty = item['qty'];
+                    var date = item['date'];
+                    var price = item['price'];
+                    var desc = item['desc'];
+                    var subtotal = parseFloat(Math.round((qty * price) * 100) / 100).toFixed(2);
+
+                    var item = "<li data-item-sku='" + sku + "' data-item-qty='" + qty + "' data-item-date='"
+                        + date + "'>" + desc + " " + qty + " x $" + price + " = " + subtotal
+                        + " <input type='button' data-remove-button='remove' value='X'/></li>";
+                    shoppingCartList.append(item);
+
+
+                }
+                console.log('cart items array, added', cartDataItems);
+            }
+            loadShoppingCartItems();
+
+            $('#productslist').on('click', 'input[data-sku-add]', function() {
+                //console.log(this.getAttribute("data-sku-add"));
+
+                // get the sku
+                var sku = this.getAttribute("data-sku-add");
+                var qty = $("input[data-sku-qty='" + sku + "']").val();
+                var price = $("td[data-sku-price='" + sku + "']").text();
+                var desc = $("td[data-sku-desc='" + sku + "']").text();
+                var subtotal = parseFloat(Math.round((qty * price) * 100) / 100).toFixed(2);
+                console.log(desc, "quantity", qty, "price", price);
+
+                var shoppingCartList = $("#shoppingCart");
+
+
+                // ALTERED FOR WEB STORAGE
+                var aDate = new Date();
+                var item = "<li data-item-sku='" + sku + "' data-item-qty='" + qty + "' data-item-date='"
+                    + aDate.getTime() + "'>" + desc + " " + qty + " x $" + price + " = " + subtotal
+                    + " <input type='button' data-remove-button='remove' value='X'/></li>";
+                shoppingCartList.append(item);
+
+
+                // SESSION STORAGE - SAVE SKU AND QTY AS AN OBJECT IN THE
+                // ARRAY INSIDE OF THE AUTOSAVE OBJECT
+                var cartData = sessionStorage.getObject('autosave');
+                if(cartData == null) {
+                    return;
+                }
+                var item = {'sku': sku, 'qty': qty, date: aDate.getTime(), 'desc': desc, 'price': price};
+                cartData['items'].push(item);
+                // clobber the old value
+                sessionStorage.setObject('autosave', cartData);
+
+
+            });
+
+            // remove items from the car
+            $("#shoppingCart").on("click", "input", function() {
+                // https://api.jquery.com/closest/
+
+                // WEB STORAGE REMOVE
+                var thisInputSKU = this.parentNode.getAttribute('data-item-sku');
+                var thisInputQty = this.parentNode.getAttribute('data-item-qty');
+                var thisInputDate = this.parentNode.getAttribute('data-item-date');
+
+                var cartData = sessionStorage.getObject('autosave');
+                if(cartData == null) {
+                    return;
+                }
+                var cartDataItems = cartData['items'];
+                for(var i = 0; i < cartDataItems.length; i++) {
+                    var item = cartDataItems[i];
+                    // get the item based on the sku, qty, and date
+                    if(item['sku'] == thisInputSKU && item['date'] == thisInputDate) {
+                        // remove from web storage
+                        cartDataItems.splice(i, 1);
+
+                    }
+                }
+                cartData['items'] = cartDataItems;
+                console.log('cart data stuff', cartData);
+                // clobber the old value
+                sessionStorage.setObject('autosave', cartData);
+
+                this.closest("li").remove();
+            });
+
+
+            // start the cart
+            $("#startCart").click(function() {
+                console.log("Start cart.");
+                $.ajax({
+                    url: "./shoppingcart.php",
+                    type: "POST",
+                    dataType: 'json',
+                    data: {action: "startcart"},
+                    success: function(returnedData) {
+                        console.log("cart start response: ", returnedData);
+
+                        // WEB STORAGE - SESSION STORAGE
+                        //var sessionID = returnedData['s_id'];
+                        sessionStorage.setObject('autosave', {items: []});
+
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+            });
+            
+
+            // cancel the cart
+            $("#cancelCart").click(function() {
+
+                console.log("End cart.");
+                $.ajax({
+                    url: "./shoppingcart.php",
+                    type: "POST",
+                    dataType: 'json',
+                    data: {action: "cancelcart"},
+                    success: function(returnedData) {
+                        console.log("cart cancel response: ", returnedData);
+                        // SESSION STORAGE - CLEAR THE SESSION
+                        sessionStorage.clear();
+
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+                var shoppingCartList = $("#shoppingCart").html("");
+            });
+
+            // cancel the cart
+            $("#checkoutcart").click(function() {
+
+                // retrieve all of the items from the cart:
+                var items = $("#shoppingCart li");
+                var itemArray = [];
+                $.each(items, function(key, value) {
+
+                    var item = {sku: value.getAttribute("data-item-sku"),
+                        qty: value.getAttribute("data-item-qty")};
+                    itemArray.push(item);
+                });
+                var itemsAsJSON = JSON.stringify(itemArray);
+                console.log("itemsAsJSON", itemsAsJSON);
+
+
+                console.log("Check out cart with the following items", itemArray);
+                $.ajax({
+                    url: "./shoppingcart.php",
+                    type: "POST",
+                    dataType: 'json',
+                    data: {action: "checkoutcart", items: itemsAsJSON},
+                    success: function(returnedData) {
+                        console.log("cart check out response: ", returnedData);
+
+                        // SESSION STORAGE - CLEAR THE SESSION
+                        sessionStorage.clear();
+
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(jqXHR.statusText, textStatus);
+                    }
+                });
+                var shoppingCartList = $("#shoppingCart").html("");
+            });
+
+
+        });
+      /*]]>*/</script>
+
+    <footerReplace metal:use-macro="/templating/footer.xhtml/page_footer">
+    </footerReplace>
+
+  </body>
+</html>

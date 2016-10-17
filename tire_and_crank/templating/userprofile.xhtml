@@ -1,0 +1,9 @@
+ <div id="profileContainer" metal:define-macro="userProfile">
+        <div id="userProfile" tal:condition="exists:profile">
+          <h2>User Profile</h2>
+          <span tal:content="profile/user_name"></span>
+          <span tal:content="profile/first_name"></span>
+          <span tal:content="profile/last_name"></span>
+          <br/><br/><br/>
+        </div>
+      </div>

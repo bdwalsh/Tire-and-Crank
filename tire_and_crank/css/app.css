@@ -1,0 +1,71 @@
+
+
+
+#main {
+	border: 1px solid orange;
+	margin: 0 auto;
+}
+
+#home {
+	background: url(../img/background_main.jpg) no-repeat center center;
+	height: 700px;
+}
+
+#frontSplash {
+	background: rgba(200,200,200, 0.5);
+	text-align: center;
+}
+
+#frontSplash h1 {
+	font-weight: 900;
+}
+
+h2 {
+	font-style: italic;
+}
+
+#loginFormContainer, #logoutFormContainer {
+	background: #ccc;
+}
+
+legend {
+	background: #ccc;
+}
+#topLogo {
+	height: 55px;
+}
+
+
+/* *shopping cart */
+#cartTop {
+	border: 1px solid red;
+	padding: 5px;
+	text-align: center;
+	
+}
+
+#showCart {
+	margin: 10px;
+	font-family: sans-serif;
+}
+
+
+#cartBar {
+	width: 100%;
+	background: #00b4fc;
+	padding: 5px;
+	margin-top: 0;
+
+}
+
+footer {
+	clear: both;
+	background: #000;
+	color: #ccc;
+	padding: 10px 0px;
+}
+
+.footerText {
+	list-style: none;
+	text-align: center;
+}

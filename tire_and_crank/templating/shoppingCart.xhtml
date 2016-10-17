@@ -1,0 +1,77 @@
+<div id="shoppingCartContainer" metal:define-macro="shoppingCart">
+
+  <div class="large-3 large-push-9 columns">
+
+  <div id="cartTop" class="" data-responsive-toggle="cartBar" data-hide-for="large">
+    <div id="showCart">
+      <button class="fa fa-shopping-cart fa-2x" type="button" data-toggle="data-toggle"></button><span style="font-size: 1.7em;"> Show Cart</span>
+    </div>
+  </div>
+
+    <div id="cartBar">
+      
+      <p class="show-for-large text-center"><i class="fa fa-shopping-cart fa-3x"></i>Cart Summary</p>
+
+      <table>
+        <thead>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Price</th>
+          <th>X</th>
+        </thead>
+      <tbody id="shoppingCart">
+
+          <!--<tr><td> data-item-qty="1" data-item-sku="sk-438s3x"> <td> Coffee Cup (1) &#160;
+            <input type="button" data-remove-button="remove" value="X"/></td></tr>-->
+
+      </tbody>
+      
+
+      <tfoot>
+        <td></td>
+        <td class="text-right">Total:</td>
+        <td id="totalPrice">0</td>
+        <td></td>
+      </tfoot>
+      </table>
+
+
+
+
+
+
+       
+
+      
+      <input type="button" class="alert button" value="Cancel Cart" id="cancelCart"/>
+
+      <input type="button" class="success button" value="Check Out" id="checkoutcart"/>
+      <span style="display: inline; font-size: 8pt;"><i>You'll see taxes and other shipping costs (ha ha) during checkout.</i></span>     
+    </div>
+    
+  </div>
+
+      <div class="large-9 large-pull-3 columns">
+        <table id="productTable">
+
+          <thead>
+            <tr>
+              <th class="hide-for-small-only">Image</th>
+              <th>Product</th>
+              <th>Quantity</th>
+              <th>Price</th>
+              <th>Add</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="productslist">
+            <!-- THIS SECTION WILL BE REPLACED BY SERVER GENERATED ROWS -->
+
+
+            <!-- THIS SECTION WILL BE REPLACED BY SERVER GENERATED ROWS -->
+          </tbody>
+        </table>
+      </div>
+
+
+</div>

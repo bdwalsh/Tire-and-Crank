@@ -1,0 +1,34 @@
+
+    <div id="loginFormContainer" tal:condition="php: !Session::get('isLoggedIn')" metal:define-macro="login">
+        <form id="loginForm">
+          <fieldset class="fieldset">
+            <legend>Log In</legend>
+            <div class="row">
+              <div class="small-12 columns">
+                <label>User Name
+                  <input id="user_name" type="text" placeholder="user_name" name="user_name" autofocus="autofocus"/>
+                </label>
+              </div>
+               
+            </div>
+            <div class="row">
+              <div class="small-12 columns">
+                <label>Password
+                  <input id="password" type="password" placeholder="password" name="password"/>
+                </label>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="small-6 columns">
+               <input id="loginbutton" class="button" type="button" value="Login"/>
+              </div>
+              <div class="small-6 columns">
+                <input id="resetLoginForm" class="button float-right" type="reset" value="Reset"/>
+              </div>
+            </div>
+
+          </fieldset>
+        </form>
+
+      </div>

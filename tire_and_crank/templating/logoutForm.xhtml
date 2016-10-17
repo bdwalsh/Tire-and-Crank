@@ -1,0 +1,17 @@
+<!-- tal:condition="exists: isLoggedIn" -->
+
+<div class="row">
+  <div class="medium-6 medium-offset-6 large-4 large-offset-8 columns">
+          <div id="logoutFormContainer" tal:condition="php: Session::get('isLoggedIn')" metal:define-macro="logout">
+          
+            <form id="logoutForm">
+              <fieldset class="fieldset">
+                <legend>Logout</legend>
+                  <input id="logoutbutton" class="button float-center" type="button" value="Logout"/>
+                  <input type="hidden" value="logout" name="logoutButton"/>      
+              </fieldset>
+            </form>
+          
+          </div>
+  </div>
+</div>
